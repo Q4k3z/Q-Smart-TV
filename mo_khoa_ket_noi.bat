@@ -11,7 +11,7 @@ if %errorLevel% neq 0 (
     echo [*] Dang yeu cau quyen Administrator...
     echo [*] Vui long bam "Yes" (Co) khi Windows hien bang xac nhan UAC.
     echo.
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd -ArgumentList '/k `\"%~f0`\"' -Verb RunAs"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -Verb RunAs"
     exit /b
 )
 

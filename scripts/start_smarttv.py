@@ -22,7 +22,7 @@ def check_firewall():
             print('[*] Phat hien Tuong lua chua mo cong 8765 cho dien thoai.')
             print('[*] Dang yeu cau mo Tuong lua (vui long chon Yes neu hien bang UAC)...')
             bat = str(root_dir / 'mo_khoa_ket_noi.bat')
-            subprocess.run(['powershell', '-NoProfile', '-Command', f'Start-Process cmd -ArgumentList "/c \\\"{bat}\\\"" -Verb RunAs'])
+            subprocess.run(['powershell', '-NoProfile', '-Command', f"Start-Process -FilePath '{bat}' -Verb RunAs"])
     except Exception:
         pass
 
