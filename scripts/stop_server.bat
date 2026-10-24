@@ -1,5 +1,9 @@
 @echo off
-chcp 65001 >nul
 cd /d "%~dp0\.."
-.\.venv\Scripts\python.exe scripts\stop_server.py
+
+if exist ".venv\Scripts\python.exe" (
+    .\.venv\Scripts\python.exe scripts\stop_server.py
+) else (
+    python scripts\stop_server.py
+)
 pause

@@ -34,11 +34,19 @@ def start_system():
     else:
         print("[*] Đang khởi động FastAPI Server chạy nền...")
         server_py = str(root_dir / "server.py")
+        log_file = settings.DATA_DIR / "logs" / "server_console.log"
+        log_out = open(log_file, "a", encoding="utf-8")
+
+        flags = subprocess.CREATE_NEW_PROCESS_GROUP
+        if sys.platform == "win32":
+            flags |= subprocess.DETACHED_PROCESS
+
         subprocess.Popen(
             [sys.executable, server_py],
             cwd=str(root_dir),
-            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
-            close_fds=True
+            stdout=log_out,
+            stderr=log_out,
+            creationflags=flags
         )
 
         ready = False
@@ -76,7 +84,7 @@ def start_system():
     print("  (Hoặc quét mã QR trên góc phải màn hình TV)")
     print("========================================================\n")
     print("Hệ thống đang chạy. Để dừng máy chủ, chạy scripts\\stop_server.bat")
-    time.sleep(4)
+    time.sleep(3)
 
 if __name__ == "__main__":
     start_system()
