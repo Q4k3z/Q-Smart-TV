@@ -61,13 +61,11 @@ async function sendApi(url, body = null, method = 'POST') {
 // System State Application
 function applyState(data) {
   if (!data) return;
-  // Launcher visibility
   if (data.launcher === 'closed') {
     reopenCard.classList.add('visible');
   } else {
     reopenCard.classList.remove('visible');
   }
-  // Online indicator
   statusDot.className = 'status-dot dot-online';
   const appName = data.active_app ? ` | ${data.active_app.toUpperCase()}` : '';
   statusText.textContent = `Online${appName}`;
@@ -263,7 +261,7 @@ document.getElementById('form-text').addEventListener('submit', (e) => {
   }
 });
 
-// Main Section Tabs Switching (Remote vs Movies vs IPTV)
+// Main Section Tabs (Remote / Movies / IPTV)
 const mainViews = {
   'tab-remote-view': 'view-remote',
   'tab-movies-view': 'view-movies',
@@ -272,6 +270,8 @@ const mainViews = {
 
 let cachedMovies = [];
 let cachedChannels = [];
+let cachedFavorites = [];
+let filterOnlyFavorites = false;
 
 Object.entries(mainViews).forEach(([tabId, viewId]) => {
   document.getElementById(tabId).addEventListener('click', () => {
@@ -282,13 +282,14 @@ Object.entries(mainViews).forEach(([tabId, viewId]) => {
 
     if (viewId === 'view-movies' && !cachedMovies.length) {
       loadMoviesList();
-    } else if (viewId === 'view-iptv' && !cachedChannels.length) {
+    } else if (viewId === 'view-iptv') {
+      loadPlaylistsDropdown();
       loadIPTVChannels();
     }
   });
 });
 
-// Load & Filter Movies
+// Movies List
 async function loadMoviesList() {
   const container = document.getElementById('movies-list-container');
   container.innerHTML = '<div class="loading-state">Đang quét danh sách phim...</div>';
@@ -332,27 +333,69 @@ document.getElementById('search-movies-input').addEventListener('input', (e) => 
   renderMovies(filtered);
 });
 
+// IPTV Playlists Dropdown
+async function loadPlaylistsDropdown() {
+  const select = document.getElementById('select-playlist');
+  const playlists = await sendApi('/api/iptv/playlists', null, 'GET');
+  if (playlists) {
+    select.innerHTML = '<option value="">Tất cả kênh</option>';
+    playlists.forEach(pl => {
+      const opt = document.createElement('option');
+      opt.value = pl.id;
+      opt.textContent = pl.name;
+      select.appendChild(opt);
+    });
+  }
+}
+
+document.getElementById('select-playlist').addEventListener('change', (e) => {
+  const plId = e.target.value;
+  loadIPTVChannels(plId);
+});
+
 // Load & Filter IPTV Channels
-async function loadIPTVChannels() {
+async function loadIPTVChannels(playlistId = '') {
   const container = document.getElementById('iptv-list-container');
   container.innerHTML = '<div class="loading-state">Đang tải danh sách kênh IPTV...</div>';
-  const channels = await sendApi('/api/iptv/channels', null, 'GET');
+  
+  const [channels, favorites] = await Promise.all([
+    sendApi(playlistId ? `/api/iptv/channels?playlist_id=${playlistId}` : '/api/iptv/channels', null, 'GET'),
+    sendApi('/api/iptv/favorites', null, 'GET')
+  ]);
+
   if (channels) {
     cachedChannels = channels;
-    renderChannels(channels);
+    cachedFavorites = favorites || [];
+    filterAndRenderChannels();
   } else {
     container.innerHTML = '<div class="loading-state">Không thể tải danh sách kênh.</div>';
   }
 }
 
+function filterAndRenderChannels() {
+  const q = document.getElementById('search-iptv-input').value.toLowerCase().trim();
+  let list = cachedChannels;
+  if (filterOnlyFavorites) {
+    const favUrls = new Set(cachedFavorites.map(f => f.url));
+    list = list.filter(ch => favUrls.has(ch.url));
+  }
+  if (q) {
+    list = list.filter(ch => ch.title.toLowerCase().includes(q) || (ch.group && ch.group.toLowerCase().includes(q)));
+  }
+  renderChannels(list);
+}
+
 function renderChannels(channels) {
   const container = document.getElementById('iptv-list-container');
   if (!channels.length) {
-    container.innerHTML = '<div class="loading-state">Không có kênh nào khả dụng.</div>';
+    container.innerHTML = '<div class="loading-state">Không có kênh nào phù hợp.</div>';
     return;
   }
   container.innerHTML = '';
+  const favUrls = new Set(cachedFavorites.map(f => f.url));
+
   channels.forEach(ch => {
+    const isStarred = favUrls.has(ch.url);
     const item = document.createElement('div');
     item.className = 'list-item';
     item.innerHTML = `
@@ -360,18 +403,78 @@ function renderChannels(channels) {
         <div class="item-name">📺 ${ch.title}</div>
         <div class="item-sub">${ch.group || 'IPTV Stream'}</div>
       </div>
-      <div class="item-action-icon">▶</div>
+      <div class="item-actions-group">
+        <button class="star-btn ${isStarred ? 'starred' : ''}" title="Yêu thích">★</button>
+        <div class="item-action-icon">▶</div>
+      </div>
     `;
-    item.addEventListener('click', async () => {
+
+    // Click to Play
+    item.querySelector('.item-main').addEventListener('click', async () => {
       showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
       await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
     });
+    item.querySelector('.item-action-icon').addEventListener('click', async () => {
+      showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
+      await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
+    });
+
+    // Toggle Star
+    const starBtn = item.querySelector('.star-btn');
+    starBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const res = await sendApi('/api/iptv/favorites', { channel: ch });
+      if (res) {
+        if (res.favorited) {
+          cachedFavorites.push(ch);
+          starBtn.classList.add('starred');
+          showAlert(`Đã thêm ${ch.title} vào Yêu thích`, 'info', 1500);
+        } else {
+          cachedFavorites = cachedFavorites.filter(f => f.url !== ch.url);
+          starBtn.classList.remove('starred');
+          showAlert(`Đã bỏ ${ch.title} khỏi Yêu thích`, 'info', 1500);
+        }
+        if (filterOnlyFavorites) filterAndRenderChannels();
+      }
+    });
+
     container.appendChild(item);
   });
 }
 
-document.getElementById('search-iptv-input').addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase().trim();
-  const filtered = cachedChannels.filter(ch => ch.title.toLowerCase().includes(q) || (ch.group && ch.group.toLowerCase().includes(q)));
-  renderChannels(filtered);
+document.getElementById('search-iptv-input').addEventListener('input', filterAndRenderChannels);
+
+// Favorites Filter Toggle
+const btnFilterFav = document.getElementById('btn-filter-fav');
+btnFilterFav.addEventListener('click', () => {
+  filterOnlyFavorites = !filterOnlyFavorites;
+  btnFilterFav.classList.toggle('active', filterOnlyFavorites);
+  filterAndRenderChannels();
+});
+
+// Add Playlist Modal
+const addPlaylistModal = document.getElementById('add-playlist-modal');
+document.getElementById('btn-open-add-playlist').addEventListener('click', () => {
+  addPlaylistModal.classList.add('active');
+});
+
+document.getElementById('btn-cancel-add-playlist').addEventListener('click', () => {
+  addPlaylistModal.classList.remove('active');
+});
+
+document.getElementById('form-add-playlist').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('playlist-name-input').value.trim();
+  const url = document.getElementById('playlist-url-input').value.trim();
+  if (name && url) {
+    const res = await sendApi('/api/iptv/playlists', { name, url });
+    if (res) {
+      addPlaylistModal.classList.remove('active');
+      showAlert(`Đã lưu playlist: ${name}`, 'info', 2000);
+      document.getElementById('playlist-name-input').value = '';
+      document.getElementById('playlist-url-input').value = '';
+      await loadPlaylistsDropdown();
+      loadIPTVChannels(res.id);
+    }
+  }
 });

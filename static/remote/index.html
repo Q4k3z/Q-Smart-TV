@@ -132,21 +132,48 @@
     <!-- VIEW 2: MOVIES BROWSER -->
     <div class="tab-view" id="view-movies">
       <div class="search-bar">
-        <input type="text" id="search-movies-input" placeholder="Tìm tên phim...">
+        <input type="text" id="search-movies-input" placeholder="Tìm tên phim trong máy...">
       </div>
       <div class="item-list-container" id="movies-list-container">
-        <div class="loading-state">Đang tải danh sách phim...</div>
+        <div class="loading-state">Đang quét danh sách phim...</div>
       </div>
     </div>
 
     <!-- VIEW 3: IPTV CHANNELS BROWSER -->
     <div class="tab-view" id="view-iptv">
-      <div class="search-bar">
-        <input type="text" id="search-iptv-input" placeholder="Tìm kiếm kênh truyền hình...">
+      <div class="iptv-toolbar">
+        <div class="search-bar flex-1">
+          <input type="text" id="search-iptv-input" placeholder="Tìm kiếm kênh truyền hình...">
+        </div>
+        <button class="btn-filter-fav" id="btn-filter-fav" title="Chỉ hiện kênh yêu thích">⭐ Yêu thích</button>
+        <button class="btn-add-playlist" id="btn-open-add-playlist" title="Thêm Playlist">+ Thêm</button>
       </div>
+
+      <div class="playlist-selector-row">
+        <select id="select-playlist" class="playlist-select">
+          <option value="">Tất cả kênh</option>
+        </select>
+      </div>
+
       <div class="item-list-container" id="iptv-list-container">
         <div class="loading-state">Đang tải danh sách kênh...</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Add Playlist Modal -->
+  <div class="modal-overlay" id="add-playlist-modal">
+    <div class="modal-card">
+      <h3 class="modal-title">Thêm Playlist M3U</h3>
+      <p class="modal-desc">Nhập tên và đường dẫn URL (hoặc tệp) playlist IPTV:</p>
+      <form id="form-add-playlist" style="display:flex; flex-direction:column; gap:0.8rem; margin-bottom:1.2rem;">
+        <input type="text" id="playlist-name-input" placeholder="Tên gợi nhớ (VD: Kênh Tin Tức)" required style="background:#0f172a; border:1px solid #334155; padding:0.8rem; border-radius:8px; color:#fff;">
+        <input type="url" id="playlist-url-input" placeholder="https://.../channels.m3u" required style="background:#0f172a; border:1px solid #334155; padding:0.8rem; border-radius:8px; color:#fff;">
+        <div class="modal-btns">
+          <button type="button" class="btn btn-cancel" id="btn-cancel-add-playlist">Hủy</button>
+          <button type="submit" class="btn btn-primary" style="padding:0.8rem 1rem;">Lưu Playlist</button>
+        </div>
+      </form>
     </div>
   </div>
 
