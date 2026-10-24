@@ -27,9 +27,6 @@ temp_refs/
 data/brave-tv-profile/
 data/brave-external-profile/
 
-# Build artifacts
-Q Smart TV.exe
-
 # Editor & OS Files
 .vscode/
 .idea/
