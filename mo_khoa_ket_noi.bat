@@ -1,41 +1,34 @@
 @echo off
+title Q Smart TV - Mo Khoa Tuong Lua Cho Dien Thoai
 cd /d "%~dp0"
 
-if "%~1"=="elevated" goto :run_admin
+echo ========================================================
+echo   Q SMART TV - MO KHOA KET NOI CHO DIEN THOAI (FIREWALL)
+echo ========================================================
+echo.
+echo [*] Dang mo cong 8765 tren Tuong lua Windows...
+echo [*] Vui long bam "Yes" tren hop thoai Windows UAC (neu co)...
+echo.
 
-net session >nul 2>&1
-if %errorLevel% neq 0 (
-    echo ========================================================
-    echo   Q SMART TV - MO KHOA KET NOI CHO DIEN THOAI (FIREWALL)
-    echo ========================================================
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process netsh -ArgumentList 'advfirewall firewall delete rule name=\"Q Smart TV Server\"' -Verb RunAs -Wait; Start-Process netsh -ArgumentList 'advfirewall firewall add rule name=\"Q Smart TV Server\" dir=in action=allow protocol=TCP localport=8765 profile=any' -Verb RunAs -Wait; Start-Process powershell -ArgumentList '-NoProfile -Command Get-NetConnectionProfile | Where-Object { $_.InterfaceAlias -like \"*Wi-Fi*\" -or $_.InterfaceAlias -like \"*Ethernet*\" } | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue' -Verb RunAs -Wait"
+
+echo.
+echo [*] Kiem tra ket qua Tuong lua:
+netsh advfirewall firewall show rule name="Q Smart TV Server"
+if %errorlevel% equ 0 (
     echo.
-    echo [*] Dang yeu cau quyen Administrator...
-    echo [*] Vui long bam "Yes" (Co) khi Windows hien bang xac nhan UAC.
+    echo ========================================================
+    echo   [THANH CONG] DA MO KHOA TUONG LUA HOAN TAT!
+    echo   Dien thoai bay gio da co the ket noi vao Q Remote.
+    echo   Dia chi: http://192.168.1.7:8765
+    echo ========================================================
+) else (
     echo.
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd -ArgumentList '/c `\"%~f0`\" elevated' -Verb RunAs"
-    exit /b
+    echo ========================================================
+    echo   [!] Neu chua hien thong tin Rule tren, ban hay:
+    echo       1. Nhap CHUOT PHAI vao file 'mo_khoa_ket_noi.bat'
+    echo       2. Chon: 'Run as administrator' (Chay voi quyen quan tri)
+    echo ========================================================
 )
-
-:run_admin
-echo ========================================================
-echo   Q SMART TV - DANG MO KHOA TUONG LUA (ADMINISTRATOR)
-echo ========================================================
-echo.
-
-echo [*] Dang tao quy tac cho phep cong 8765 tren Windows Firewall...
-netsh advfirewall firewall delete rule name="Q Smart TV Server" >nul 2>&1
-netsh advfirewall firewall add rule name="Q Smart TV Server" dir=in action=allow protocol=TCP localport=8765 profile=any
-
-echo [*] Dang chuyen Wi-Fi sang che do Private (Ho tro ket noi mang noi bo)...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-NetConnectionProfile | Where-Object { $_.InterfaceAlias -like '*Wi-Fi*' -or $_.InterfaceAlias -like '*Ethernet*' } | Set-NetConnectionProfile -NetworkCategory Private -ErrorAction SilentlyContinue"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\configure_firewall.ps1"
-
-echo.
-echo ========================================================
-echo   [THANH CONG] DA MO KHOA HOAN TAT!
-echo   Dien thoai bay gio da co the ket noi vao Q Remote.
-echo   Dia chi: http://192.168.1.7:8765
-echo ========================================================
 echo.
 pause
