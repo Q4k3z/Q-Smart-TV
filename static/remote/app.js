@@ -28,11 +28,7 @@ function showAlert(message, type = 'error', duration = 3000) {
 }
 
 // API Call Wrapper
-let isRequestPending = false;
 async function sendApi(url, body = null, method = 'POST') {
-  if (isRequestPending) return null;
-  isRequestPending = true;
-
   try {
     const opts = { method, headers: getHeaders() };
     if (body) opts.body = JSON.stringify(body);
@@ -53,8 +49,6 @@ async function sendApi(url, body = null, method = 'POST') {
   } catch (err) {
     showAlert('Không thể kết nối đến máy chủ Q Smart TV.', 'error');
     return null;
-  } finally {
-    isRequestPending = false;
   }
 }
 

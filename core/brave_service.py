@@ -29,12 +29,7 @@ class BraveService:
             ext_profile = settings.DATA_DIR / "brave-external-profile"
             ext_profile.mkdir(parents=True, exist_ok=True)
 
-            # 1. Minimize Launcher so it does not block or cover the browser
-            launcher_pid = process_manager.get_pid("launcher")
-            if launcher_pid:
-                minimize_window_by_pid(launcher_pid)
-
-            # 2. Check if external browser process is already running
+            # Check if external browser process is already running
             existing_pid = process_manager.get_pid("external_browser")
 
             cmd = [

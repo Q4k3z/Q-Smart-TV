@@ -23,10 +23,30 @@ def is_server_ready():
     except Exception:
         return False
 
+def check_firewall_rule():
+    if sys.platform != "win32":
+        return
+    try:
+        check = subprocess.run(
+            ["netsh", "advfirewall", "firewall", "show", "rule", "name=Q Smart TV Server"],
+            capture_output=True,
+            text=True
+        )
+        if "Q Smart TV Server" not in check.stdout:
+            print("[*] Tường lửa chưa mở cổng 8765 cho điện thoại kết nối.")
+            print("[*] Đang yêu cầu cấp quyền mạng (vui lòng bấm 'Yes' trên màn hình nếu có hộp thoại UAC)...")
+            bat_path = str(root_dir / "mo_khoa_ket_noi.bat")
+            subprocess.run(["powershell", "-Command", f'Start-Process cmd -ArgumentList "/c \\\"{bat_path}\\\"" -Verb RunAs'])
+    except Exception:
+        pass
+
 def start_system():
     print("========================================================")
     print("          Q SMART TV — KHỞI CHẠY HỆ THỐNG")
     print("========================================================\n")
+
+    # 0. Check and request firewall permission if needed
+    check_firewall_rule()
 
     # 1. Check or start FastAPI server
     if is_server_ready():
@@ -34,8 +54,6 @@ def start_system():
     else:
         print("[*] Đang khởi động FastAPI Server chạy nền...")
         server_py = str(root_dir / "server.py")
-        log_file = settings.DATA_DIR / "logs" / "server_console.log"
-        log_out = open(log_file, "a", encoding="utf-8")
 
         flags = subprocess.CREATE_NEW_PROCESS_GROUP
         if sys.platform == "win32":
@@ -44,8 +62,9 @@ def start_system():
         subprocess.Popen(
             [sys.executable, server_py],
             cwd=str(root_dir),
-            stdout=log_out,
-            stderr=log_out,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             creationflags=flags
         )
 

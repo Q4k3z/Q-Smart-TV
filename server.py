@@ -76,8 +76,12 @@ def health_check():
     return {"status": "ok", "app": "Q Smart TV"}
 
 @app.get("/")
-def index_redirect():
-    return RedirectResponse(url="/tv")
+def index_redirect(request: Request):
+    ua = request.headers.get("user-agent", "").lower()
+    is_mobile = any(m in ua for m in ["mobile", "android", "iphone", "ipad"])
+    if is_mobile:
+        return RedirectResponse(url=f"/remote?token={settings.AUTH_TOKEN}")
+    return RedirectResponse(url=f"/tv?token={settings.AUTH_TOKEN}")
 
 @app.get("/tv", response_class=HTMLResponse)
 def serve_tv_ui():

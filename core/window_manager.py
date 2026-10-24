@@ -33,21 +33,23 @@ def get_process_family_pids(root_pid: int) -> List[int]:
     return pids
 
 def find_visible_window_for_pids(pids: List[int]) -> Optional[int]:
-    """Finds the first visible top-level window belonging to any of the specified PIDs."""
+    """Finds the first visible or iconic top-level window belonging to any of the specified PIDs."""
     pids_set = set(pids)
     found_hwnd: Optional[int] = None
 
     def enum_cb(hwnd, lparam):
         nonlocal found_hwnd
-        if user32.IsWindowVisible(hwnd):
-            w_pid = ctypes.c_ulong()
-            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(w_pid))
-            if w_pid.value in pids_set:
+        w_pid = ctypes.c_ulong()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(w_pid))
+        if w_pid.value in pids_set:
+            is_vis = user32.IsWindowVisible(hwnd)
+            is_icon = user32.IsIconic(hwnd)
+            if is_vis or is_icon:
                 rect = ctypes.wintypes.RECT()
                 user32.GetWindowRect(hwnd, ctypes.byref(rect))
                 width = rect.right - rect.left
                 height = rect.bottom - rect.top
-                if width > 100 and height > 100:
+                if is_icon or (width > 50 and height > 50):
                     found_hwnd = hwnd
                     return False
         return True

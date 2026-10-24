@@ -68,6 +68,27 @@ def run_diagnostics():
             print(f"    Server phản hồi: {data.get('status')} ({data.get('app')})")
     except Exception:
         print("    Server đang dừng (Offline)")
+    print()
+
+    # 6. Windows Firewall & Network Profile Check
+    print("[6] Kiểm tra Tường lửa (Firewall) cho Điện thoại:")
+    if sys.platform == "win32":
+        try:
+            import subprocess
+            check = subprocess.run(
+                ["netsh", "advfirewall", "firewall", "show", "rule", "name=Q Smart TV Server"],
+                capture_output=True,
+                text=True
+            )
+            if "Q Smart TV Server" in check.stdout:
+                print("    Windows Firewall (Cổng 8765): ĐÃ MỞ (Hợp lệ)")
+            else:
+                print("    Windows Firewall (Cổng 8765): [!] CHƯA CẤP PHÉP")
+                print("    -> Vui lòng chạy file 'mo_khoa_ket_noi.bat' để mở khóa cho điện thoại kết nối.")
+        except Exception as e:
+            print(f"    Không thể kiểm tra Firewall: {e}")
+    else:
+        print("    Không áp dụng trên hệ điều hành này.")
 
     print("\n========================================================")
     print("                 KẾT THÚC CHẨN ĐOÁN")
