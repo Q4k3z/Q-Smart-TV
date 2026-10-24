@@ -12,6 +12,21 @@ from config import settings, get_lan_ip
 from scripts.server_identity import managed_server_process
 
 
+def check_firewall():
+    if sys.platform != 'win32':
+        return
+    try:
+        check = subprocess.run(['netsh', 'advfirewall', 'firewall', 'show', 'rule', 'name=Q Smart TV Server'],
+                               capture_output=True, text=True)
+        if 'Q Smart TV Server' not in check.stdout:
+            print('[*] Phat hien Tuong lua chua mo cong 8765 cho dien thoai.')
+            print('[*] Dang yeu cau mo Tuong lua (vui long chon Yes neu hien bang UAC)...')
+            bat = str(root_dir / 'mo_khoa_ket_noi.bat')
+            subprocess.run(['powershell', '-NoProfile', '-Command', f'Start-Process cmd -ArgumentList "/c \\\"{bat}\\\"" -Verb RunAs'])
+    except Exception:
+        pass
+
+
 def is_server_ready():
     try:
         with urllib.request.urlopen(f'http://127.0.0.1:{settings.PORT}/health', timeout=1) as resp:
@@ -21,6 +36,7 @@ def is_server_ready():
 
 
 def start_system():
+    check_firewall()
     if is_server_ready():
         if not managed_server_process():
             print('[LỖI] Cổng đang thuộc một server khác. Kiểm tra QSMART_PORT; không mở thêm server.')
