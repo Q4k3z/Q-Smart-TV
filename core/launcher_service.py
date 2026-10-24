@@ -22,9 +22,7 @@ class LauncherService:
                 pid = process_manager.get_pid('launcher')
                 restored = restore_window_by_pid(pid)
                 if restored or find_visible_window_for_pids(get_process_family_pids(pid)):
-                    changes = {'launcher': 'open'}
-                    if restored:
-                        changes['active_app'] = 'launcher'
+                    changes = {'launcher': 'open', 'active_app': 'launcher'}
                     await state_manager.update(**changes)
                     return {'status': 'already_running', 'foreground': restored, 'message': 'Launcher đã đang mở.'}
                 if not await process_manager.terminate_process('launcher'):

@@ -21,8 +21,6 @@ class AppController:
         result = await launcher_service.open_launcher()
         if result['status'] == 'error':
             return result
-        if result.get('foreground') is False:
-            return {'status': 'error', 'message': 'TV đang mở nhưng Windows chưa cho đưa cửa sổ lên trước. Hãy chọn cửa sổ Q Smart TV trên máy tính.'}
         await state_manager.update(active_app='launcher')
         await event_bus.send_tv('home')
         return {'status': 'success', 'action': 'home'}

@@ -36,9 +36,13 @@ class InputService:
         self._user32.SendInput.argtypes = [wintypes.UINT,ctypes.POINTER(INPUT),ctypes.c_int]
         self._user32.SendInput.restype = wintypes.UINT
         self._user32.GetCursorPos.argtypes = [ctypes.POINTER(wintypes.POINT)]
+        self._user32.GetCursorPos.restype = wintypes.BOOL
+        self._user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
+        self._user32.GetWindowRect.restype = wintypes.BOOL
         self._user32.SetThreadDpiAwarenessContext.argtypes = [ctypes.c_void_p]
         self._user32.SetThreadDpiAwarenessContext.restype = ctypes.c_void_p
         self.held_buttons = {}
+        self._last_cursor = None
 
     def _focus_target(self, target):
         from core.process_manager import process_manager
@@ -47,15 +51,27 @@ class InputService:
         if not pid:
             return False
         hwnd = find_visible_window_for_pids(get_process_family_pids(pid))
-        if hwnd and user32.GetForegroundWindow() == hwnd:
+        if not hwnd:
+            return False
+        if user32.GetForegroundWindow() == hwnd:
             return True
-        return restore_window_by_pid(pid)
+        restore_window_by_pid(pid)
+        return True
 
     def _send(self, events):
         if not events:
             return True
         inputs = (INPUT * len(events))(*events)
-        return self._user32.SendInput(len(events), inputs, ctypes.sizeof(INPUT)) == len(events)
+        res = self._user32.SendInput(len(events), inputs, ctypes.sizeof(INPUT))
+        if res != len(events):
+            try:
+                hdesk = self._user32.OpenInputDesktop(0, False, 0x10000000) or self._user32.OpenDesktopW('Default', 0, False, 0x10000000)
+                if hdesk:
+                    self._user32.SetThreadDesktop(hdesk)
+                    res = self._user32.SendInput(len(events), inputs, ctypes.sizeof(INPUT))
+            except Exception:
+                pass
+        return res == len(events)
 
     def _key(self, vk, flags=0):
         scan = self._user32.MapVirtualKeyW(vk,0)
@@ -119,12 +135,17 @@ class InputService:
         previous_dpi = self._user32.SetThreadDpiAwarenessContext(ctypes.c_void_p(-4))
         try:
             rect, point = wintypes.RECT(), wintypes.POINT()
-            if not self._user32.GetWindowRect(hwnd,ctypes.byref(rect)) or not self._user32.GetCursorPos(ctypes.byref(point)):
+            if not self._user32.GetWindowRect(hwnd, ctypes.byref(rect)):
                 return False
+            if not self._user32.GetCursorPos(ctypes.byref(point)):
+                point.x, point.y = self._last_cursor or ((rect.left + rect.right) // 2, (rect.top + rect.bottom) // 2)
             x = max(rect.left+2,min(rect.right-3,point.x+int(dx)))
             y = max(rect.top+2,min(rect.bottom-3,point.y+int(dy)))
-            vx,vy,vw,vh = [self._user32.GetSystemMetrics(i) for i in (76,77,78,79)]
-            events = [self._mouse(0xC001,round((x-vx)*65535/max(1,vw-1)),round((y-vy)*65535/max(1,vh-1)))]
+            self._last_cursor = (x, y)
+            events = []
+            if action == 'move' or dx != 0 or dy != 0:
+                vx,vy,vw,vh = [self._user32.GetSystemMetrics(i) for i in (76,77,78,79)]
+                events.append(self._mouse(0xC001,round((x-vx)*65535/max(1,vw-1)),round((y-vy)*65535/max(1,vh-1))))
             down,up = (2,4) if button == 'left' else (8,16)
             if action == 'wheel': events.append(self._mouse(0x0800,data=wheel))
             if action in ('click','down'): events.append(self._mouse(down))

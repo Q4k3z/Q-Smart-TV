@@ -73,6 +73,14 @@ def find_visible_window_for_pids(pids: List[int]) -> Optional[int]:
 
     cb_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
     user32.EnumWindows(cb_type(enum_cb), 0)
+    if not candidates:
+        try:
+            hdesk = user32.OpenDesktopW('Default', 0, False, 0x10000000)
+            if hdesk:
+                user32.EnumDesktopWindows(hdesk, cb_type(enum_cb), 0)
+                user32.CloseDesktop(hdesk)
+        except Exception:
+            pass
     return max(candidates, key=lambda item: item[0])[1] if candidates else None
 
 def wait_for_window_by_pid(root_pid: int, timeout: float = 3.5) -> Optional[int]:
