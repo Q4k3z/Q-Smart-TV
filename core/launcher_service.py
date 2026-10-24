@@ -1,30 +1,16 @@
 import asyncio
 import subprocess
 import logging
-import ctypes
 from config import settings
 from core.process_manager import process_manager
 from core.state_manager import state_manager
+from core.window_manager import (
+    wait_for_window_by_pid,
+    force_foreground_window,
+    restore_window_by_pid
+)
 
 logger = logging.getLogger("qsmarttv.launcher_service")
-
-def bring_window_to_front(pid: int):
-    """Brings the window belonging to the given PID to the foreground."""
-    user32 = ctypes.windll.user32
-    def enum_cb(hwnd, lparam):
-        w_pid = ctypes.c_ulong()
-        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(w_pid))
-        if w_pid.value == pid and user32.IsWindowVisible(hwnd):
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            user32.SetForegroundWindow(hwnd)
-            return False
-        return True
-
-    cb_type = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-    try:
-        user32.EnumWindows(cb_type(enum_cb), 0)
-    except Exception as e:
-        logger.debug("Không thể đưa cửa sổ PID=%d lên foreground: %s", pid, str(e))
 
 class LauncherService:
     def __init__(self):
@@ -38,8 +24,8 @@ class LauncherService:
             if self.is_open():
                 pid = process_manager.get_pid("launcher")
                 if pid:
-                    bring_window_to_front(pid)
-                logger.info("Launcher đã đang chạy. Đã đưa cửa sổ lên foreground.")
+                    restore_window_by_pid(pid)
+                logger.info("Launcher đã đang chạy. Đã khôi phục và đưa cửa sổ lên foreground.")
                 return {"status": "already_running", "message": "Launcher đã đang mở trên màn hình."}
 
             if not settings.BRAVE_PATH:
@@ -69,10 +55,20 @@ class LauncherService:
                 process_manager.register_process("launcher", proc.pid)
                 await state_manager.update(launcher="open", active_app="launcher")
                 logger.info("Đã mở Q Smart TV Launcher PID=%d", proc.pid)
+
+                # Ensure launcher window is brought to foreground
+                asyncio.create_task(self._ensure_launcher_foreground(proc.pid))
+
                 return {"status": "success", "message": "Đã mở giao diện Launcher thành công."}
             except Exception as e:
                 logger.error("Lỗi khi khởi chạy Launcher: %s", str(e))
                 return {"status": "error", "message": f"Lỗi khởi chạy launcher: {str(e)}"}
+
+    async def _ensure_launcher_foreground(self, pid: int):
+        await asyncio.sleep(0.3)
+        hwnd = wait_for_window_by_pid(pid, timeout=4.0)
+        if hwnd:
+            force_foreground_window(hwnd)
 
     async def exit_launcher(self) -> dict:
         async with self._lock:

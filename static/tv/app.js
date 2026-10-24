@@ -166,14 +166,19 @@ async function handleAppClick(appType) {
   const container = document.getElementById('content-view');
 
   if (appType === 'youtube') {
-    container.innerHTML = '<div class="content-title">Đang mở YouTube trên Brave Browser...</div>';
+    container.innerHTML = '<div class="content-title">▶ Đang mở YouTube trên Brave Browser...</div>';
     await fetch(`/api/browser/youtube?token=${token}`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ query: '' })
     });
   } else if (appType === 'browser') {
-    renderBrowserView(container);
+    container.innerHTML = '<div class="content-title">🌐 Đang mở Trình duyệt Web trên Brave...</div>';
+    await fetch(`/api/browser/open?token=${token}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ url: 'https://www.google.com' })
+    });
   } else if (appType === 'iptv') {
     renderIPTVView(container);
   } else if (appType === 'movies') {
@@ -263,38 +268,6 @@ async function renderIPTVView(container) {
   } catch (err) {
     container.innerHTML = '<div class="content-title">Lỗi kết nối IPTV.</div>';
   }
-}
-
-// Browser View
-function renderBrowserView(container) {
-  const sites = [
-    { name: 'Google', url: 'https://www.google.com' },
-    { name: 'VnExpress', url: 'https://vnexpress.net' },
-    { name: 'Dân Trí', url: 'https://dantri.com.vn' },
-    { name: 'Tuổi Trẻ Online', url: 'https://tuoitre.vn' }
-  ];
-  let html = '<div class="content-title">Trang web yêu thích (Mở bằng Brave)</div><div class="list-scroll-grid">';
-  sites.forEach(s => {
-    html += `
-      <div class="media-item focusable" tabindex="0" data-url="${s.url}">
-        <div class="m-title">🌐 ${s.name}</div>
-        <div class="m-meta">${s.url}</div>
-      </div>
-    `;
-  });
-  html += '</div>';
-  container.innerHTML = html;
-
-  container.querySelectorAll('.media-item').forEach(item => {
-    item.addEventListener('click', async () => {
-      const url = item.dataset.url;
-      await fetch(`/api/browser/open?token=${token}`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ url })
-      });
-    });
-  });
 }
 
 // Settings View

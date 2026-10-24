@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 from config import settings
 from core.process_manager import process_manager
 from core.state_manager import state_manager
+from core.window_manager import restore_window_by_pid
 
 logger = logging.getLogger("qsmarttv.mpv_service")
 
@@ -24,15 +25,15 @@ class MPVService:
         if not self.is_running():
             return None
         payload = json.dumps({"command": command}) + "\n"
-        try:
-            with open(self._pipe_name, "r+b", buffering=0) as pipe:
-                pipe.write(payload.encode("utf-8"))
-                # Read response line
-                line = pipe.readline().decode("utf-8").strip()
-                if line:
-                    return json.loads(line)
-        except Exception as e:
-            logger.debug("Không thể gửi IPC đến mpv: %s", str(e))
+        for _ in range(3):
+            try:
+                with open(self._pipe_name, "r+b", buffering=0) as pipe:
+                    pipe.write(payload.encode("utf-8"))
+                    line = pipe.readline().decode("utf-8").strip()
+                    if line:
+                        return json.loads(line)
+            except Exception as e:
+                time.sleep(0.1)
         return None
 
     async def play(self, target: str, title: str = "", is_stream: bool = False) -> dict:
@@ -51,6 +52,7 @@ class MPVService:
                 settings.MPV_PATH,
                 f"--input-ipc-server={self._pipe_name}",
                 "--fs",
+                "--ontop",
                 "--force-window=immediate",
                 f"--title={display_title}",
                 "--idle=no",
@@ -87,18 +89,22 @@ class MPVService:
         """Monitors mpv process and updates state when mpv exits."""
         try:
             while process_manager.is_running("mpv") and process_manager.get_pid("mpv") == pid:
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.8)
         except asyncio.CancelledError:
             return
         finally:
             if not process_manager.is_running("mpv"):
                 logger.info("Tiến trình mpv PID=%d đã kết thúc.", pid)
                 await state_manager.update(mpv="stopped", current_media=None)
+                # Restore launcher window to foreground
+                launcher_pid = process_manager.get_pid("launcher")
+                if launcher_pid:
+                    restore_window_by_pid(launcher_pid)
 
     async def pause_toggle(self) -> dict:
         if not self.is_running():
             return {"status": "error", "message": "mpv không đang phát."}
-        res = self._send_ipc(["cycle", "pause"])
+        self._send_ipc(["cycle", "pause"])
         current_mpv_state = state_manager.mpv
         new_state = "paused" if current_mpv_state == "playing" else "playing"
         await state_manager.update(mpv=new_state)
@@ -125,6 +131,9 @@ class MPVService:
     async def stop(self) -> dict:
         async with self._lock:
             await self._stop_internal()
+            launcher_pid = process_manager.get_pid("launcher")
+            if launcher_pid:
+                restore_window_by_pid(launcher_pid)
             return {"status": "success", "message": "Đã dừng phát media."}
 
 mpv_service = MPVService()
