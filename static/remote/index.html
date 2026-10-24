@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Q Remote</title>
+  <link rel="stylesheet" href="/static/remote/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="remote-body">
+  <div class="remote-container">
+    <!-- Top Header -->
+    <header class="remote-header">
+      <div class="brand">
+        <span class="q-badge">Q</span>
+        <span class="brand-title">REMOTE</span>
+      </div>
+      <div class="status-indicator" id="status-indicator">
+        <span class="status-dot dot-offline" id="status-dot"></span>
+        <span class="status-text" id="status-text">Đang kết nối...</span>
+      </div>
+    </header>
+
+    <!-- Alert / Toast Banner -->
+    <div class="alert-banner" id="alert-banner"></div>
+
+    <!-- Reopen TV Banner (Shown when launcher is closed) -->
+    <div class="reopen-card" id="reopen-card">
+      <div class="reopen-info">
+        <strong>Màn hình TV đang tắt</strong>
+        <span>Server vẫn đang chạy ngầm và sẵn sàng.</span>
+      </div>
+      <button class="btn btn-reopen" id="btn-reopen-tv">📺 Mở lại TV</button>
+    </div>
+
+    <!-- Media Playing Card (Live playback feedback) -->
+    <div class="media-playing-bar" id="media-playing-bar">
+      <div class="media-playing-info">
+        <span class="m-badge" id="media-badge">Đang phát</span>
+        <span class="m-playing-title" id="media-playing-title">---</span>
+      </div>
+      <button class="btn-stop-mini" id="btn-media-quick-stop" title="Dừng">⏹</button>
+    </div>
+
+    <!-- Main Section Tabs -->
+    <nav class="main-nav-tabs">
+      <button class="nav-tab-btn active" id="tab-remote-view">🎮 Remote</button>
+      <button class="nav-tab-btn" id="tab-movies-view">🎬 Phim</button>
+      <button class="nav-tab-btn" id="tab-iptv-view">📺 Truyền hình</button>
+    </nav>
+
+    <!-- VIEW 1: REMOTE CONTROLLER -->
+    <div class="tab-view active" id="view-remote">
+      <!-- Top Action Navigation -->
+      <section class="nav-bar">
+        <button class="nav-btn" id="btn-home" title="Trang chủ">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-btn" id="btn-back" title="Quay lại">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          <span>Back</span>
+        </button>
+        <button class="nav-btn nav-btn-exit" id="btn-exit-tv" title="Thoát TV">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+          <span>Thoát TV</span>
+        </button>
+      </section>
+
+      <!-- D-Pad Directional Controller -->
+      <section class="dpad-section">
+        <div class="dpad-circle">
+          <button class="dpad-btn dpad-up" id="btn-up" aria-label="Lên">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h16z"/></svg>
+          </button>
+          <button class="dpad-btn dpad-left" id="btn-left" aria-label="Trái">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 12l8-8v16z"/></svg>
+          </button>
+          <button class="dpad-btn dpad-center" id="btn-ok" aria-label="OK">
+            <span>OK</span>
+          </button>
+          <button class="dpad-btn dpad-right" id="btn-right" aria-label="Phải">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 12l-8-8v16z"/></svg>
+          </button>
+          <button class="dpad-btn dpad-down" id="btn-down" aria-label="Xuống">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20l8-8H4z"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Media Controls -->
+      <section class="media-section">
+        <div class="media-row">
+          <button class="media-btn" id="btn-seek-back" title="Tua lùi 10s">⏪ -10s</button>
+          <button class="media-btn media-btn-primary" id="btn-play-pause" title="Phát / Tạm dừng">⏯ Phát/Dừng</button>
+          <button class="media-btn" id="btn-seek-forward" title="Tua tới 10s">+10s ⏩</button>
+        </div>
+        <div class="media-row">
+          <button class="media-btn" id="btn-vol-down" title="Giảm âm lượng">🔉 Vol -</button>
+          <button class="media-btn" id="btn-vol-mute" title="Tắt tiếng">🔇 Mute</button>
+          <button class="media-btn" id="btn-vol-up" title="Tăng âm lượng">🔊 Vol +</button>
+        </div>
+      </section>
+
+      <!-- Text & Search Input Section -->
+      <section class="input-section">
+        <div class="input-tabs">
+          <button class="tab-btn active" id="tab-yt">YouTube</button>
+          <button class="tab-btn" id="tab-url">Mở Web</button>
+          <button class="tab-btn" id="tab-text">Bàn phím</button>
+        </div>
+
+        <form class="action-form active" id="form-yt">
+          <input type="text" id="input-yt" placeholder="Tìm kiếm YouTube..." autocomplete="off">
+          <button type="submit" class="btn btn-primary">Tìm</button>
+        </form>
+
+        <form class="action-form" id="form-url">
+          <input type="url" id="input-url" placeholder="https://..." autocomplete="off">
+          <button type="submit" class="btn btn-primary">Mở</button>
+        </form>
+
+        <form class="action-form" id="form-text">
+          <input type="text" id="input-text" placeholder="Nhập văn bản gửi tới TV..." autocomplete="off">
+          <button type="submit" class="btn btn-primary">Gửi</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- VIEW 2: MOVIES BROWSER -->
+    <div class="tab-view" id="view-movies">
+      <div class="search-bar">
+        <input type="text" id="search-movies-input" placeholder="Tìm tên phim...">
+      </div>
+      <div class="item-list-container" id="movies-list-container">
+        <div class="loading-state">Đang tải danh sách phim...</div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: IPTV CHANNELS BROWSER -->
+    <div class="tab-view" id="view-iptv">
+      <div class="search-bar">
+        <input type="text" id="search-iptv-input" placeholder="Tìm kiếm kênh truyền hình...">
+      </div>
+      <div class="item-list-container" id="iptv-list-container">
+        <div class="loading-state">Đang tải danh sách kênh...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exit TV Confirmation Modal -->
+  <div class="modal-overlay" id="exit-modal">
+    <div class="modal-card">
+      <h3 class="modal-title">Thoát chế độ TV?</h3>
+      <p class="modal-desc">
+        Thao tác này chỉ đóng giao diện Q Smart TV trên màn hình. Server vẫn chạy nền và bạn có thể mở lại TV từ điện thoại bất cứ lúc nào.
+      </p>
+      <div class="modal-btns">
+        <button class="btn btn-cancel" id="modal-btn-cancel">Hủy</button>
+        <button class="btn btn-confirm-exit" id="modal-btn-confirm">Xác nhận thoát</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/remote/app.js"></script>
+</body>
+</html>

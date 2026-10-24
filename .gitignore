@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+data/logs/*
+data/brave-tv-profile/
+data/brave-external-profile/
+.env
+temp_refs/
+.pytest_cache/

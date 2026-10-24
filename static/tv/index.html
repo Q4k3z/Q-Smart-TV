@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q Smart TV</title>
+  <link rel="stylesheet" href="/static/tv/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body class="tv-body">
+  <div class="tv-container">
+    <!-- Header -->
+    <header class="tv-header">
+      <div class="header-left">
+        <div class="q-logo">
+          <span class="q-badge">Q</span>
+          <span class="tv-title">SMART TV</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <button class="qr-pairing-btn focusable" id="qr-pairing-btn" tabindex="0">
+          📱 Kết nối Remote
+        </button>
+        <div class="network-badge" id="net-badge">
+          <span class="dot-online"></span>
+          <span id="remote-ip-info">Đang kết nối...</span>
+        </div>
+        <div class="time-display" id="time-display">00:00</div>
+        <div class="date-display" id="date-display">Thứ ..., --/--/----</div>
+      </div>
+    </header>
+
+    <!-- Main Launcher Area -->
+    <main class="tv-main">
+      <section class="section-title">
+        <h2>ỨNG DỤNG</h2>
+      </section>
+
+      <div class="app-grid" id="app-grid" role="grid">
+        <!-- YouTube App -->
+        <div class="app-card focusable" tabindex="0" data-app="youtube">
+          <div class="app-icon youtube-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </div>
+          <span class="app-name">YouTube</span>
+        </div>
+
+        <!-- Web Browser -->
+        <div class="app-card focusable" tabindex="0" data-app="browser">
+          <div class="app-icon browser-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </div>
+          <span class="app-name">Trình duyệt</span>
+        </div>
+
+        <!-- IPTV -->
+        <div class="app-card focusable" tabindex="0" data-app="iptv">
+          <div class="app-icon iptv-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+              <polyline points="17 2 12 7 7 2"></polyline>
+            </svg>
+          </div>
+          <span class="app-name">IPTV Truyền hình</span>
+        </div>
+
+        <!-- Offline Movies -->
+        <div class="app-card focusable" tabindex="0" data-app="movies">
+          <div class="app-icon movies-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="23 7 16 12 23 17 23 7"></polygon>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </div>
+          <span class="app-name">Phim của tôi</span>
+        </div>
+
+        <!-- Settings -->
+        <div class="app-card focusable" tabindex="0" data-app="settings">
+          <div class="app-icon settings-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+          <span class="app-name">Cài đặt</span>
+        </div>
+      </div>
+
+      <!-- Detail Panels Container -->
+      <section class="detail-container" id="detail-container">
+        <div id="content-view" class="content-view"></div>
+      </section>
+    </main>
+
+    <!-- Footer Help -->
+    <footer class="tv-footer">
+      <div class="nav-hints">
+        <span class="hint-key">↑ ↓ ← →</span> Di chuyển
+        <span class="hint-key">Enter</span> Chọn
+        <span class="hint-key">Home</span> Trang chủ
+        <span class="hint-key">Esc / Back</span> Trở về
+      </div>
+      <button class="exit-btn focusable" id="exit-btn" tabindex="0">Thoát TV</button>
+    </footer>
+  </div>
+
+  <!-- QR Pairing Modal -->
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal-box qr-modal-box">
+      <h3 class="modal-title">📱 Kết nối Q Remote</h3>
+      <p class="modal-text">
+        Quét mã QR bằng camera điện thoại (cùng mạng Wi-Fi) để điều khiển TV:
+      </p>
+      <div class="qr-container">
+        <img id="qr-image" src="" alt="QR Code Remote" class="qr-img">
+      </div>
+      <div class="qr-url-text" id="qr-url-display">Đang tải địa chỉ...</div>
+      <div class="modal-actions" style="margin-top: 1.5rem;">
+        <button class="btn btn-secondary focusable" id="btn-close-qr" tabindex="0">Đóng [Esc]</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exit Confirmation Dialog -->
+  <div class="modal-overlay" id="exit-modal">
+    <div class="modal-box">
+      <h3 class="modal-title">Thoát chế độ TV?</h3>
+      <p class="modal-text">
+        Thao tác này chỉ đóng giao diện Q Smart TV trên màn hình. Server vẫn chạy nền và bạn có thể mở lại TV từ điện thoại bất cứ lúc nào.
+      </p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary focusable" id="btn-cancel-exit" tabindex="0">Hủy</button>
+        <button class="btn btn-danger focusable" id="btn-confirm-exit" tabindex="0">Xác nhận thoát</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/tv/app.js"></script>
+</body>
+</html>
