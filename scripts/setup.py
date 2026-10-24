@@ -41,6 +41,10 @@ def run_setup():
     print(f"    Thư mục media: {config.settings.DATA_DIR / 'media'}")
     print(f"    Brave Browser: {config.settings.BRAVE_PATH or '[!] CHƯA TÌM THẤY'}")
     print(f"    mpv Player:    {config.settings.MPV_PATH or '[!] CHƯA TÌM THẤY'}\n")
+    if not config.settings.BRAVE_PATH:
+        print("[!] Cần cài Brave từ https://brave.com/download/ để mở launcher.")
+    if not config.settings.MPV_PATH:
+        print("[!] Chưa phát được media/IPTV. Cài mpv theo https://mpv.io/installation/ và đặt QSMART_MPV_PATH trong .env.")
 
     print("========================================================")
     print("       HOÀN THÀNH CÀI ĐẶT Q SMART TV THÀNH CÔNG!")

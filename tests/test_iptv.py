@@ -44,3 +44,23 @@ def test_favorite_toggle():
     # Remove from favorite
     removed = iptv_service.toggle_favorite(test_ch)
     assert removed is False
+
+
+def test_all_channels_combines_configured_playlists(tmp_path, monkeypatch):
+    first = tmp_path / 'first.m3u'
+    second = tmp_path / 'second.m3u'
+    first.write_text(SAMPLE_M3U, encoding='utf-8')
+    second.write_text(SAMPLE_M3U, encoding='utf-8')
+    monkeypatch.setattr(iptv_service, 'get_playlists', lambda: [
+        {'id':'one','url':str(first)}, {'id':'two','url':str(second)}])
+    assert len(iptv_service.load_channels()) == 4
+
+
+def test_playlist_names_do_not_cause_id_collisions():
+    first = iptv_service.add_playlist('Kênh gia đình', 'https://example.com/a.m3u')
+    second = iptv_service.add_playlist('Kênh gia đình', 'https://example.com/b.m3u')
+    try:
+        assert first['id'] != second['id']
+    finally:
+        iptv_service.delete_playlist(first['id'])
+        iptv_service.delete_playlist(second['id'])

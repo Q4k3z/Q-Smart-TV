@@ -1,7 +1,5 @@
 // Q Remote Client Logic
-const urlParams = new URLSearchParams(window.location.search);
-let token = urlParams.get('token') || localStorage.getItem('qsmart_token') || '';
-if (token) localStorage.setItem('qsmart_token', token);
+const { token, escape: esc } = QSmart;
 
 const statusDot = document.getElementById('status-dot');
 const statusText = document.getElementById('status-text');
@@ -11,17 +9,13 @@ const mediaPlayingBar = document.getElementById('media-playing-bar');
 const mediaPlayingTitle = document.getElementById('media-playing-title');
 const mediaBadge = document.getElementById('media-badge');
 
-function getHeaders() {
-  const h = { 'Content-Type': 'application/json' };
-  if (token) h['Authorization'] = `Bearer ${token}`;
-  return h;
-}
-
+let alertTimer;
 function showAlert(message, type = 'error', duration = 3000) {
+  clearTimeout(alertTimer);
   alertBanner.textContent = message;
   alertBanner.className = `alert-banner ${type}`;
   if (duration > 0) {
-    setTimeout(() => {
+    alertTimer = setTimeout(() => {
       alertBanner.className = 'alert-banner';
     }, duration);
   }
@@ -29,40 +23,23 @@ function showAlert(message, type = 'error', duration = 3000) {
 
 // API Call Wrapper
 async function sendApi(url, body = null, method = 'POST') {
-  try {
-    const opts = { method, headers: getHeaders() };
-    if (body) opts.body = JSON.stringify(body);
-    const targetUrl = url.includes('?') ? `${url}&token=${token}` : `${url}?token=${token}`;
-
-    const res = await fetch(targetUrl, opts);
-    if (!res.ok) {
-      let errDetail = 'Lỗi yêu cầu máy chủ.';
-      try {
-        const errJson = await res.json();
-        if (errJson.detail) errDetail = errJson.detail;
-      } catch (e) {}
-      showAlert(errDetail, 'error');
-      return null;
-    }
-    const data = await res.json();
-    return data;
-  } catch (err) {
-    showAlert('Không thể kết nối đến máy chủ Q Smart TV.', 'error');
-    return null;
-  }
+  try { return await QSmart.request(url, body, method); }
+  catch (err) { showAlert(err.message, 'error', 8000); return null; }
 }
 
 // System State Application
 function applyState(data) {
   if (!data) return;
+  window.RemoteControls?.state(data);
   if (data.launcher === 'closed') {
     reopenCard.classList.add('visible');
   } else {
     reopenCard.classList.remove('visible');
   }
   statusDot.className = 'status-dot dot-online';
-  const appName = data.active_app ? ` | ${data.active_app.toUpperCase()}` : '';
-  statusText.textContent = `Online${appName}`;
+  const names = {launcher:'Trang chủ', youtube:'YouTube', browser:'Trình duyệt', movies:'Phim', iptv:'IPTV'};
+  const appName = data.active_app ? ` | ${names[data.active_app] || data.active_app}` : '';
+  statusText.textContent = `Server online | TV ${data.launcher === 'open' ? 'đang mở' : data.launcher === 'starting' ? 'đang mở...' : 'đã đóng'}${appName}`;
 
   // Media playback feedback
   if (data.mpv && data.mpv !== 'stopped' && data.mpv !== 'error') {
@@ -88,21 +65,27 @@ async function fetchStatus() {
 // WebSocket Live Updates
 let ws = null;
 let reconnectDelay = 1000;
+let reconnectTimer;
 function connectWebSocket() {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${proto}//${window.location.host}/ws?token=${token}`;
+  const wsUrl = `${proto}//${window.location.host}/ws?token=${encodeURIComponent(token)}`;
   
+  clearTimeout(reconnectTimer);
+  if (ws && ws.readyState < 2) return;
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
+    window.RemoteControls?.connected(ws);
     reconnectDelay = 1000;
     statusDot.className = 'status-dot dot-online';
     statusText.textContent = 'Đã kết nối';
+    fetchStatus();
   };
 
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (msg.event === 'input_result') { window.RemoteControls?.result(msg); return; }
       if (msg.event === 'state_changed' || msg.event === 'connected') {
         applyState(msg.data);
       }
@@ -110,9 +93,10 @@ function connectWebSocket() {
   };
 
   ws.onclose = () => {
+    window.RemoteControls?.disconnected();
     statusDot.className = 'status-dot dot-offline';
     statusText.textContent = 'Mất kết nối. Đang thử lại...';
-    setTimeout(() => {
+    reconnectTimer = setTimeout(() => {
       reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
       connectWebSocket();
       fetchStatus();
@@ -124,22 +108,25 @@ function connectWebSocket() {
   };
 }
 
-fetchStatus();
-connectWebSocket();
+document.getElementById('btn-reconnect').onclick = () => { fetchStatus(); connectWebSocket(); };
+if (token) { fetchStatus(); connectWebSocket(); }
+else showAlert('Chưa ghép nối. Quét mã QR trên TV để kết nối.', 'error', 0);
 
 // Navigation Controls
 document.getElementById('btn-home').addEventListener('click', () => {
+  window.RemoteControls?.end();
   sendApi('/api/control/home');
 });
 
 document.getElementById('btn-back').addEventListener('click', () => {
+  window.RemoteControls?.end();
   sendApi('/api/control/back');
 });
 
 // Reopen TV
 document.getElementById('btn-reopen-tv').addEventListener('click', async () => {
   const res = await sendApi('/api/launcher/open');
-  if (res && res.status === 'success') {
+  if (res && ['success', 'already_running'].includes(res.status)) {
     reopenCard.classList.remove('visible');
     showAlert('Đang mở màn hình TV...', 'info', 2000);
   }
@@ -156,6 +143,7 @@ document.getElementById('modal-btn-cancel').addEventListener('click', () => {
 });
 
 document.getElementById('modal-btn-confirm').addEventListener('click', async () => {
+  window.RemoteControls?.end();
   exitModal.classList.remove('active');
   const res = await sendApi('/api/launcher/exit');
   if (res) {
@@ -233,16 +221,16 @@ document.getElementById('form-yt').addEventListener('submit', (e) => {
   showAlert('Đang mở YouTube...', 'info', 2000);
 });
 
-document.getElementById('form-url').addEventListener('submit', (e) => {
+document.getElementById('form-url').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = document.getElementById('input-url');
-  let url = input.value.trim();
-  if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
+  const url = input.value.trim();
+  if (!url) return;
+  const result = await sendApi('/api/browser/open', { url });
+  if (result) {
+    input.value = '';
+    showAlert('Đã mở website.', 'success', 2000);
   }
-  sendApi('/api/browser/open', { url });
-  input.value = '';
-  showAlert('Đang mở website...', 'info', 2000);
 });
 
 document.getElementById('form-text').addEventListener('submit', (e) => {
@@ -308,14 +296,14 @@ function renderMovies(movies) {
     item.className = 'list-item';
     item.innerHTML = `
       <div class="item-main">
-        <div class="item-name">${m.title}</div>
-        <div class="item-sub">${m.size_mb} MB &bull; ${m.filename}</div>
+        <div class="item-name">${esc(m.title)}</div>
+        <div class="item-sub">${m.size_mb} MB &bull; ${esc(m.filename)}</div>
       </div>
       <div class="item-action-icon">▶</div>
     `;
     item.addEventListener('click', async () => {
-      showAlert(`Đang phát: ${m.title}`, 'info', 2000);
-      await sendApi('/api/media/play', { path: m.path, title: m.title });
+      const result = await sendApi('/api/media/play', { path: m.path, title: m.title });
+      if (result) showAlert(`Đang phát: ${m.title}`, 'info', 2000);
     });
     container.appendChild(item);
   });
@@ -353,7 +341,7 @@ async function loadIPTVChannels(playlistId = '') {
   container.innerHTML = '<div class="loading-state">Đang tải danh sách kênh IPTV...</div>';
   
   const [channels, favorites] = await Promise.all([
-    sendApi(playlistId ? `/api/iptv/channels?playlist_id=${playlistId}` : '/api/iptv/channels', null, 'GET'),
+    sendApi(playlistId ? `/api/iptv/channels?playlist_id=${encodeURIComponent(playlistId)}` : '/api/iptv/channels', null, 'GET'),
     sendApi('/api/iptv/favorites', null, 'GET')
   ]);
 
@@ -394,8 +382,8 @@ function renderChannels(channels) {
     item.className = 'list-item';
     item.innerHTML = `
       <div class="item-main">
-        <div class="item-name">📺 ${ch.title}</div>
-        <div class="item-sub">${ch.group || 'IPTV Stream'}</div>
+        <div class="item-name">📺 ${esc(ch.title)}</div>
+        <div class="item-sub">${esc(ch.group || 'IPTV Stream')}</div>
       </div>
       <div class="item-actions-group">
         <button class="star-btn ${isStarred ? 'starred' : ''}" title="Yêu thích">★</button>
@@ -405,12 +393,12 @@ function renderChannels(channels) {
 
     // Click to Play
     item.querySelector('.item-main').addEventListener('click', async () => {
-      showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
-      await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
+      const result = await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
+      if (result) showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
     });
     item.querySelector('.item-action-icon').addEventListener('click', async () => {
-      showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
-      await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
+      const result = await sendApi('/api/iptv/play', { url: ch.url, title: ch.title });
+      if (result) showAlert(`Đang phát: ${ch.title}`, 'info', 2000);
     });
 
     // Toggle Star

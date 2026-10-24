@@ -54,7 +54,7 @@ def run_diagnostics():
     sock.close()
 
     if is_port_open:
-        print(f"    Cổng {settings.PORT}: Đang mở (Server Q Smart TV đang hoạt động)")
+        print(f"    Cổng {settings.PORT}: Đang có ứng dụng lắng nghe (kiểm tra health bên dưới)")
     else:
         print(f"    Cổng {settings.PORT}: Đang rảnh (Server chưa chạy)")
     print()
@@ -81,9 +81,9 @@ def run_diagnostics():
                 text=True
             )
             if "Q Smart TV Server" in check.stdout:
-                print("    Windows Firewall (Cổng 8765): ĐÃ MỞ (Hợp lệ)")
+                print(f"    Có quy tắc Q Smart TV. Cần đối chiếu cổng {settings.PORT}, Private/LocalSubnet trong Windows Firewall.")
             else:
-                print("    Windows Firewall (Cổng 8765): [!] CHƯA CẤP PHÉP")
+                print(f"    Windows Firewall (Cổng {settings.PORT}): [!] CHƯA CẤP PHÉP")
                 print("    -> Vui lòng chạy file 'mo_khoa_ket_noi.bat' để mở khóa cho điện thoại kết nối.")
         except Exception as e:
             print(f"    Không thể kiểm tra Firewall: {e}")

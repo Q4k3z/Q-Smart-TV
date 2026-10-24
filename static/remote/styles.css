@@ -760,3 +760,25 @@ body.remote-body {
   box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
   color: #fff;
 }
+.remote-header { flex-wrap:wrap; gap:0.7rem; }
+.status-dot { flex-shrink:0; }
+#btn-reconnect { background:#211b38; border:1px solid #7760a1; border-radius:12px; color:#fff; padding:0.7rem; font:inherit; cursor:pointer; }
+button:disabled { opacity:0.5; cursor:wait; }
+[hidden] { display:none !important; }
+.control-mode-tabs { display:flex; gap:6px; background:#151326; border-radius:14px; padding:6px; }
+.control-mode-tabs button, .control-panel button { background:#25203b; color:#fff; border:1px solid #61527d; border-radius:10px; padding:12px 9px; font:600 14px system-ui; cursor:pointer; }
+.control-mode-tabs button { flex:1; }
+.control-mode-tabs button.active, .control-panel button.active { background:#6940a2; border-color:#b79be0; }
+.control-panel { display:flex; flex-direction:column; gap:12px; }
+.control-help { font-size:13px; line-height:1.5; color:#c3b9d9; }
+#touchpad { height:250px; border:2px solid #8064ad; border-radius:20px; background:radial-gradient(ellipse at center,#29203d,#111322); display:flex; align-items:center; justify-content:center; text-align:center; color:#bbb2ce; line-height:1.8; touch-action:none; user-select:none; }
+#touchpad.touching { border-color:#f39a52; }
+#touchpad span { pointer-events:none; }
+.mouse-buttons, .keyboard-actions, .key-buttons { display:flex; flex-wrap:wrap; gap:6px; }
+.mouse-buttons button, .keyboard-actions button { flex:1; touch-action:none; }
+.key-buttons button { flex:1 0 26%; }
+.sensitivity-label { display:flex; align-items:center; gap:12px; font-size:14px; }
+#mouse-sensitivity { flex:1; }
+#live-text { width:100%; background:#111322; color:white; border:2px solid #8b5cf6; border-radius:12px; font:18px system-ui; padding:12px; resize:vertical; user-select:text; }
+#live-text:disabled { opacity:.6; }
+.nav-bar { position:sticky; top:0; z-index:20; background:#111123f5; padding:6px; border-radius:16px; }

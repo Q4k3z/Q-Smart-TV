@@ -24,7 +24,8 @@
     </header>
 
     <!-- Alert / Toast Banner -->
-    <div class="alert-banner" id="alert-banner"></div>
+    <div class="alert-banner" id="alert-banner" role="alert"></div>
+    <button class="btn" id="btn-reconnect">Kết nối lại</button>
 
     <!-- Reopen TV Banner (Shown when launcher is closed) -->
     <div class="reopen-card" id="reopen-card">
@@ -70,6 +71,10 @@
       </section>
 
       <!-- D-Pad Directional Controller -->
+      <nav class="control-mode-tabs" aria-label="Kiểu điều khiển">
+        <button id="mode-tv" class="active" aria-pressed="true">🎮 Remote TV</button><button id="mode-mouse" aria-pressed="false">🖱 Chuột</button><button id="mode-keyboard" aria-pressed="false">⌨ Bàn phím</button>
+      </nav>
+      <p id="control-target" class="control-help">Chọn ứng dụng để điều khiển</p>
       <section class="dpad-section">
         <div class="dpad-circle">
           <button class="dpad-btn dpad-up" id="btn-up" aria-label="Lên">
@@ -87,6 +92,27 @@
           <button class="dpad-btn dpad-down" id="btn-down" aria-label="Xuống">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20l8-8H4z"/></svg>
           </button>
+        </div>
+      </section>
+
+      <section id="mouse-panel" class="control-panel" hidden>
+        <div id="touchpad" role="application" aria-label="Bàn di chuột"><span>Vuốt để di chuột<br>Chạm để click · Hai ngón để cuộn</span></div>
+        <div class="mouse-buttons"><button id="mouse-left">Chuột trái</button><button id="mouse-drag">Giữ để kéo</button><button id="mouse-right">Chuột phải</button></div>
+        <label class="sensitivity-label">Độ nhạy <input id="mouse-sensitivity" type="range" min="0.5" max="3" step="0.1" value="1.4"></label>
+        <div class="key-buttons"><button data-input-key="SHIFT_TAB">← Trước phần tử</button><button data-input-key="TAB">Sau phần tử →</button><button data-input-key="ENTER">Chọn ↵</button></div>
+      </section>
+
+      <section id="keyboard-panel" class="control-panel" hidden>
+        <p class="control-help">Dùng chuột chọn ô nhập trên laptop/TV, rồi bấm Bắt đầu nhập. Bạn sửa đoạn gõ tại đây; nội dung có sẵn trên máy được giữ nguyên ngoài vùng đã chọn.</p>
+        <div class="keyboard-actions"><button id="input-start">Bắt đầu nhập</button><button id="input-end">Xong</button></div>
+        <label for="live-text">Nội dung nhập trực tiếp</label>
+        <textarea id="live-text" rows="3" placeholder="Bấm Bắt đầu nhập trước…" disabled maxlength="8000" autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
+        <p id="typing-status" class="control-help" role="status">Chưa có phiên nhập</p>
+        <div class="key-buttons">
+          <button data-input-key="BACKSPACE">⌫ Xóa trước</button><button data-input-key="DELETE">Delete</button><button data-input-key="ENTER">Enter ↵</button>
+          <button data-input-key="SHIFT_TAB">Shift+Tab</button><button data-input-key="TAB">Tab</button><button data-input-key="SELECT_ALL">Chọn tất cả</button>
+          <button data-input-key="LEFT">←</button><button data-input-key="UP">↑</button><button data-input-key="DOWN">↓</button><button data-input-key="RIGHT">→</button>
+          <button data-input-key="HOME">Đầu dòng</button><button data-input-key="END">Cuối dòng</button><button data-input-key="ESCAPE">Esc</button>
         </div>
       </section>
 
@@ -118,7 +144,7 @@
         </form>
 
         <form class="action-form" id="form-url">
-          <input type="url" id="input-url" placeholder="https://..." autocomplete="off">
+          <input type="text" inputmode="url" id="input-url" placeholder="youtube.com hoặc 192.168.1.3:8765" autocomplete="off" autocapitalize="none" spellcheck="false" required>
           <button type="submit" class="btn btn-primary">Mở</button>
         </form>
 
@@ -191,6 +217,8 @@
     </div>
   </div>
 
+  <script src="/static/common.js"></script>
   <script src="/static/remote/app.js"></script>
+  <script src="/static/remote/controls.js"></script>
 </body>
 </html>

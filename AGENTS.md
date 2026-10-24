@@ -18,3 +18,10 @@ Dự án tuân thủ nguyên tắc thiết kế tối giản, hiệu quả và b
 ## 2. Kiểm thử và Tự kiểm tra
 - Mỗi tính năng cốt lõi (xác thực, điều hướng, vòng đời tiến trình, phân tích M3U/IPTV, media) đều phải có unit test hoặc integration test với pytest.
 - Không bao giờ tuyên bố kiểm thử thành công nếu chưa chạy thực tế.
+
+## 3. Áp dụng Ponytail và Antigravity
+- Nguồn đã kiểm tra: https://github.com/DietrichGebert/ponytail/blob/main/skills/ponytail/SKILL.md và docs/agent-portability.md (24/10/2026).
+- Dùng một AGENTS.md ở gốc làm quy tắc chung; Antigravity IDE đọc tệp này theo hướng dẫn upstream. Không cần cài hooks hoặc chép thêm bộ quy tắc trùng lặp.
+- Trước khi sửa, tìm mọi nơi gọi hàm bị ảnh hưởng; hoàn tất cả mã gọi, cấu hình và kiểm thử liên quan.
+- Chỉ dùng dependency khi có nhu cầu thật; không coi việc có tên trong requirements.txt là đã tích hợp.
+- Báo cáo phần đã chạy thực tế và phần chưa kiểm chứng trên TV, điện thoại, Brave hoặc mpv.

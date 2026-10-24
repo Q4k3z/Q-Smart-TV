@@ -35,10 +35,13 @@ async def delete_playlist(playlist_id: str):
     return {"status": "success", "deleted": playlist_id}
 
 @router.get("/channels", dependencies=[Depends(verify_token)])
-async def get_channels(
+def get_channels(
     playlist_id: Optional[str] = Query(None),
     url: Optional[str] = Query(None)
 ):
+    if url:
+        # The query may fetch HTTP playlists, never arbitrary files on the PC.
+        url = validate_url(url)
     return iptv_service.load_channels(playlist_id=playlist_id, url=url)
 
 @router.post("/play", dependencies=[Depends(verify_token)])

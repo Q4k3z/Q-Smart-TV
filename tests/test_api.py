@@ -25,8 +25,7 @@ def test_status_with_valid_token():
 def test_control_press_allowed_key():
     headers = {"Authorization": f"Bearer {settings.AUTH_TOKEN}"}
     res = client.post("/api/control/press", headers=headers, json={"key": "UP"})
-    assert res.status_code == 200
-    assert res.json()["status"] == "success"
+    assert res.status_code == 409  # No managed TV window: never inject into another app.
 
 def test_control_press_disallowed_key():
     headers = {"Authorization": f"Bearer {settings.AUTH_TOKEN}"}
@@ -39,13 +38,13 @@ def test_browser_open_disallowed_scheme():
     assert res.status_code == 400
 
 def test_qrcode_generation():
-    res = client.get("/api/qrcode")
+    res = client.get("/api/qrcode", headers={"Authorization": f"Bearer {settings.AUTH_TOKEN}"})
     assert res.status_code == 200
     assert "image/svg+xml" in res.headers["content-type"]
     assert b"<svg" in res.content
 
 def test_system_info():
-    res = client.get("/api/info")
+    res = client.get("/api/info", headers={"Authorization": f"Bearer {settings.AUTH_TOKEN}"})
     assert res.status_code == 200
     data = res.json()
     assert "lan_ip" in data

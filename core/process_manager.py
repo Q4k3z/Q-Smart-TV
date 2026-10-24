@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import psutil
+from pathlib import Path
 from typing import Optional, Dict
 
 logger = logging.getLogger("qsmarttv.process_manager")
@@ -9,6 +10,23 @@ class ProcessManager:
     def __init__(self):
         self._processes: Dict[str, psutil.Process] = {}
         self._lock = asyncio.Lock()
+
+    def adopt_browser_profile(self, name: str, executable: str, profile: Path):
+        """Recover only a browser root with our exact executable and private profile."""
+        if not executable or self.is_running(name):
+            return
+        expected_exe = str(Path(executable).resolve()).casefold()
+        expected_arg = f'--user-data-dir={profile}'.casefold()
+        for proc in psutil.process_iter(['exe', 'cmdline']):
+            try:
+                args = proc.info['cmdline'] or []
+                if (proc.info['exe'] and str(Path(proc.info['exe']).resolve()).casefold() == expected_exe
+                        and expected_arg in [arg.casefold() for arg in args]
+                        and not any(arg.startswith('--type=') for arg in args)):
+                    self.register_process(name, proc.pid)
+                    return
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
 
     def register_process(self, name: str, pid: int):
         try:
@@ -54,7 +72,7 @@ class ProcessManager:
                 proc.terminate()
 
                 # Wait for termination
-                gone, alive = psutil.wait_procs(children + [proc], timeout=timeout)
+                gone, alive = await asyncio.to_thread(psutil.wait_procs, children + [proc], timeout=timeout)
                 if alive:
                     logger.warning("Tiến trình [%s] không dừng sau %s giây, tiến hành kill", name, timeout)
                     for p in alive:
@@ -62,6 +80,9 @@ class ProcessManager:
                             p.kill()
                         except psutil.NoSuchProcess:
                             pass
+                    _, alive = await asyncio.to_thread(psutil.wait_procs, alive, timeout=timeout)
+                    if alive:
+                        return False
                 self._processes.pop(name, None)
                 logger.info("Đã đóng tiến trình [%s]", name)
                 return True

@@ -14,11 +14,13 @@ class StateManager:
         self._lock = asyncio.Lock()
 
     def get_state(self) -> dict:
+        from core.process_manager import process_manager
         return {
             "server": self.server,
             "launcher": self.launcher,
             "active_app": self.active_app,
             "mpv": self.mpv,
+            "brave": "open" if process_manager.is_running("external_browser") else "closed",
             "current_media": self.current_media,
             "updated_at": self.updated_at
         }

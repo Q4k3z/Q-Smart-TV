@@ -167,7 +167,7 @@ body.tv-body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 1.8rem;
-  max-width: 1400px;
+  padding: 1rem;
 }
 
 /* Glass App Cards */
@@ -242,7 +242,7 @@ body.tv-body {
 .focusable:focus,
 .focusable.focused {
   border-color: var(--glass-border-focus) !important;
-  transform: scale(1.08) translateY(-6px) !important;
+  transform: scale(1.03) translateY(-3px) !important;
   box-shadow: var(--focus-glow) !important;
   background: rgba(255, 255, 255, 0.12) !important;
   z-index: 10;
@@ -467,3 +467,23 @@ body.tv-body {
   box-shadow: 0 4px 20px rgba(244, 63, 94, 0.4);
   color: #fff;
 }
+.tv-alert { position:fixed; bottom:5rem; left:10%; right:10%; z-index:1000; padding:1rem; background:#7f1d1d; color:white; border-radius:12px; font-size:1.3rem; }
+.content-view input { font:inherit; color:#fff; background:#171327; border:2px solid #8b5cf6; border-radius:8px; padding:0.8rem; margin:0.5rem; }
+.content-view button { color:inherit; font:inherit; cursor:pointer; }
+button:disabled { opacity:0.5; cursor:wait; }
+.app-card { font-family:inherit; }
+.tv-main { min-height:0; }
+@media (max-width:1400px) {
+  .date-display { display:none; }
+  .header-right { gap:1rem; }
+  .tv-title { font-size:1.4rem; }
+  .time-display { font-size:1.8rem; }
+}
+@media (max-width:900px) {
+  .tv-container { padding:1.5rem; }
+  .tv-header { height:auto; flex-wrap:wrap; gap:1rem; }
+  .header-right { flex-wrap:wrap; }
+  .nav-hints { font-size:0.8rem; }
+}
+.footer-actions { display:flex; align-items:center; gap:12px; }
+#network-select { background:#201a32; color:white; font:inherit; border:1px solid #8b5cf6; padding:10px; border-radius:8px; max-width:100%; }

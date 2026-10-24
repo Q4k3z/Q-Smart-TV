@@ -10,6 +10,19 @@ logger = logging.getLogger("qsmarttv.window_manager")
 user32 = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
 
+# HWND is pointer-sized on 64-bit Windows; ctypes defaults to a 32-bit int.
+user32.GetForegroundWindow.restype = ctypes.wintypes.HWND
+user32.GetWindowThreadProcessId.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.DWORD)]
+user32.GetWindowThreadProcessId.restype = ctypes.wintypes.DWORD
+for _name in ("IsWindow", "IsWindowVisible", "IsIconic", "SetForegroundWindow", "BringWindowToTop"):
+    getattr(user32, _name).argtypes = [ctypes.wintypes.HWND]
+user32.ShowWindow.argtypes = [ctypes.wintypes.HWND, ctypes.c_int]
+user32.GetWindowRect.argtypes = [ctypes.wintypes.HWND, ctypes.POINTER(ctypes.wintypes.RECT)]
+user32.GetWindow.argtypes = [ctypes.wintypes.HWND, ctypes.wintypes.UINT]
+user32.GetWindow.restype = ctypes.wintypes.HWND
+user32.GetWindowLongPtrW.argtypes = [ctypes.wintypes.HWND, ctypes.c_int]
+user32.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+
 SW_HIDE = 0
 SW_SHOWNORMAL = 1
 SW_SHOWMINIMIZED = 2
@@ -36,6 +49,7 @@ def find_visible_window_for_pids(pids: List[int]) -> Optional[int]:
     """Finds the first visible or iconic top-level window belonging to any of the specified PIDs."""
     pids_set = set(pids)
     found_hwnd: Optional[int] = None
+    candidates = []
 
     def enum_cb(hwnd, lparam):
         nonlocal found_hwnd
@@ -50,13 +64,16 @@ def find_visible_window_for_pids(pids: List[int]) -> Optional[int]:
                 width = rect.right - rect.left
                 height = rect.bottom - rect.top
                 if is_icon or (width > 50 and height > 50):
-                    found_hwnd = hwnd
-                    return False
+                    # Browser bubbles/dialogs share the same PID. Prefer an
+                    # unowned, resizable main window instead of the first HWND.
+                    style = user32.GetWindowLongPtrW(hwnd, -16)
+                    score = (not bool(user32.GetWindow(hwnd, 4)), bool(style & 0x00040000), width * height)
+                    candidates.append((score, hwnd))
         return True
 
-    cb_type = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
+    cb_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
     user32.EnumWindows(cb_type(enum_cb), 0)
-    return found_hwnd
+    return max(candidates, key=lambda item: item[0])[1] if candidates else None
 
 def wait_for_window_by_pid(root_pid: int, timeout: float = 3.5) -> Optional[int]:
     """Polls until a visible top-level window appears for the given PID or its child processes."""
@@ -99,7 +116,7 @@ def force_foreground_window(hwnd: int) -> bool:
             user32.AttachThreadInput(curr_thread, target_thread, False)
 
         logger.info("Đã đưa cửa sổ HWND=%s lên Foreground thành công.", hwnd)
-        return True
+        return user32.GetForegroundWindow() == hwnd
     except Exception as e:
         logger.error("Lỗi khi đưa cửa sổ lên Foreground: %s", str(e))
         return False

@@ -1,6 +1,7 @@
 import json
 import logging
 import re
+import uuid
 import urllib.parse
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -17,13 +18,7 @@ class IPTVService:
 
     def _ensure_storage(self):
         if not self.playlists_file.is_file():
-            default_playlists = [
-                {
-                    "id": "sample_vietnam",
-                    "name": "Kênh mẫu thử nghiệm (IPTV-Org)",
-                    "url": "https://iptv-org.github.io/iptv/countries/vn.m3u"
-                }
-            ]
+            default_playlists = []
             self.playlists_file.write_text(json.dumps(default_playlists, ensure_ascii=False, indent=2), encoding="utf-8")
         if not self.favorites_file.is_file():
             self.favorites_file.write_text(json.dumps([], ensure_ascii=False, indent=2), encoding="utf-8")
@@ -36,7 +31,7 @@ class IPTVService:
 
     def add_playlist(self, name: str, url: str) -> Dict[str, Any]:
         playlists = self.get_playlists()
-        p_id = f"pl_{int(urllib.parse.quote_plus(name)[:10].encode('utf-8').hex()[:8], 16)}"
+        p_id = f"pl_{uuid.uuid4().hex}"
         new_item = {"id": p_id, "name": name, "url": url}
         playlists.append(new_item)
         self.playlists_file.write_text(json.dumps(playlists, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -51,6 +46,11 @@ class IPTVService:
         return False
 
     def load_channels(self, playlist_id: Optional[str] = None, url: Optional[str] = None) -> List[Dict[str, Any]]:
+        if not playlist_id and not url:
+            channels = []
+            for playlist in self.get_playlists():
+                channels.extend(self.load_channels(playlist_id=playlist['id']))
+            return channels
         target_url = url
         if not target_url and playlist_id:
             for p in self.get_playlists():

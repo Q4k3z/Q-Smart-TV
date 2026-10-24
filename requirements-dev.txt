@@ -1,0 +1,3 @@
+-r requirements.txt
+# Optional browser tests use the user's installed Brave executable.
+playwright>=1.49,<2

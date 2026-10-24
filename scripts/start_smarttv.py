@@ -1,109 +1,77 @@
 import sys
-import os
 import time
 import subprocess
 import urllib.request
+import urllib.error
 import json
+import socket
 from pathlib import Path
-
-if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
-
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root_dir))
-
 from config import settings, get_lan_ip
+from scripts.server_identity import managed_server_process
+
 
 def is_server_ready():
     try:
-        req = urllib.request.Request(f"http://127.0.0.1:{settings.PORT}/health")
-        with urllib.request.urlopen(req, timeout=1.0) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data.get("status") == "ok"
-    except Exception:
+        with urllib.request.urlopen(f'http://127.0.0.1:{settings.PORT}/health', timeout=1) as resp:
+            return json.load(resp) == {'status': 'ok', 'app': 'Q Smart TV'}
+    except (OSError, ValueError):
         return False
 
-def check_firewall_rule():
-    if sys.platform != "win32":
-        return
-    try:
-        check = subprocess.run(
-            ["netsh", "advfirewall", "firewall", "show", "rule", "name=Q Smart TV Server"],
-            capture_output=True,
-            text=True
-        )
-        if "Q Smart TV Server" not in check.stdout:
-            print("[*] Tường lửa chưa mở cổng 8765 cho điện thoại kết nối.")
-            print("[*] Đang yêu cầu cấp quyền mạng (vui lòng bấm 'Yes' trên màn hình nếu có hộp thoại UAC)...")
-            bat_path = str(root_dir / "mo_khoa_ket_noi.bat")
-            subprocess.run(["powershell", "-Command", f'Start-Process cmd -ArgumentList "/c \\\"{bat_path}\\\"" -Verb RunAs'])
-    except Exception:
-        pass
 
 def start_system():
-    print("========================================================")
-    print("          Q SMART TV — KHỞI CHẠY HỆ THỐNG")
-    print("========================================================\n")
-
-    # 0. Check and request firewall permission if needed
-    check_firewall_rule()
-
-    # 1. Check or start FastAPI server
     if is_server_ready():
-        print("[*] Server Q Smart TV đã đang hoạt động sẵn sàng.")
+        if not managed_server_process():
+            print('[LỖI] Cổng đang thuộc một server khác. Kiểm tra QSMART_PORT; không mở thêm server.')
+            return 1
+        print('[OK] Server Q Smart TV đã chạy.')
     else:
-        print("[*] Đang khởi động FastAPI Server chạy nền...")
-        server_py = str(root_dir / "server.py")
-
-        flags = subprocess.CREATE_NEW_PROCESS_GROUP
-        if sys.platform == "win32":
-            flags |= subprocess.DETACHED_PROCESS
-
-        subprocess.Popen(
-            [sys.executable, server_py],
-            cwd=str(root_dir),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=flags
-        )
-
-        ready = False
-        for _ in range(15):
-            time.sleep(1)
+        with socket.socket() as sock:
+            if sock.connect_ex(('127.0.0.1', settings.PORT)) == 0:
+                print(f'[LỖI] Cổng {settings.PORT} bị ứng dụng khác chiếm. Đổi QSMART_PORT trong .env.')
+                return 1
+        log_path = settings.DATA_DIR / 'logs' / 'startup.log'
+        flags = (subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS) if sys.platform == 'win32' else 0
+        with log_path.open('a', encoding='utf-8') as log:
+            proc = subprocess.Popen([sys.executable, str(root_dir / 'server.py')], cwd=root_dir,
+                                    stdin=subprocess.DEVNULL, stdout=log, stderr=log, creationflags=flags)
+        for _ in range(40):
             if is_server_ready():
-                ready = True
                 break
-
-        if not ready:
-            print("[LỖI] Máy chủ không thể khởi động sau 15 giây.")
-            print(f"Vui lòng kiểm tra log tại: {settings.DATA_DIR / 'logs' / 'server.log'}")
-            input("Nhấn Enter để thoát...")
-            sys.exit(1)
-        print("[OK] Máy chủ FastAPI đã sẵn sàng.")
-
-    # 2. Open TV Launcher
-    print("[*] Đang mở giao diện TV Launcher trên màn hình...")
-    open_url = f"http://127.0.0.1:{settings.PORT}/api/launcher/open?token={settings.AUTH_TOKEN}"
+            if proc.poll() is not None:
+                break
+            time.sleep(0.5)
+        if not is_server_ready():
+            print(f'[LỖI] Server chưa sẵn sàng. Xem {log_path}')
+            return 1
+    req = urllib.request.Request(f'http://127.0.0.1:{settings.PORT}/api/launcher/open', method='POST',
+                                 headers={'Authorization': f'Bearer {settings.AUTH_TOKEN}'})
+    result = None
     try:
-        req = urllib.request.Request(open_url, method="POST")
-        with urllib.request.urlopen(req, timeout=5.0) as resp:
-            res_data = json.loads(resp.read().decode("utf-8"))
-            print(f"[OK] {res_data.get('message', 'Đã gửi lệnh mở Launcher.')}")
-    except Exception as e:
-        print(f"[CẢNH BÁO] Không thể gọi API mở launcher: {e}")
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            result = json.load(resp)
+        print(result.get('message', ''))
+    except (OSError, ValueError):
+        print('[LỖI] Không gọi được launcher. Xem data/logs/server.log; server vẫn chạy.')
+    print(f'Q Remote: http://{get_lan_ip()}:{settings.PORT}/remote?token={settings.AUTH_TOKEN}')
+    print('Điện thoại dùng cùng Wi-Fi. Nếu bị chặn, xem diagnose.bat và hướng dẫn Firewall trong README.')
+    return 0 if result and result.get('status') in ('success', 'already_running') else 1
 
-    # 3. Print Remote Connection URL
-    lan_ip = get_lan_ip()
-    remote_url = f"http://{lan_ip}:{settings.PORT}/remote?token={settings.AUTH_TOKEN}"
 
-    print("\n========================================================")
-    print("  KẾT NỐI Q REMOTE TỪ ĐIỆN THOẠI (CÙNG WI-FI):")
-    print(f"  {remote_url}")
-    print("  (Hoặc quét mã QR trên góc phải màn hình TV)")
-    print("========================================================\n")
-    print("Hệ thống đang chạy. Để dừng máy chủ, chạy scripts\\stop_server.bat")
-    time.sleep(3)
-
-if __name__ == "__main__":
-    start_system()
+if __name__ == '__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    # Serialize double-clicks without requiring an extra dependency or administrator.
+    import msvcrt
+    with (settings.DATA_DIR / 'config' / 'startup.lock').open('a+b') as lock:
+        lock.seek(0)
+        lock.write(b'0')
+        lock.flush()
+        lock.seek(0)
+        try:
+            msvcrt.locking(lock.fileno(), msvcrt.LK_NBLCK, 1)
+        except OSError:
+            print('Q Smart TV đang khởi động. Vui lòng đợi.')
+            sys.exit(0)
+        sys.exit(start_system())

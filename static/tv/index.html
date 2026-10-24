@@ -83,6 +83,9 @@
           <span class="app-name">Phim của tôi</span>
         </div>
 
+        <button class="app-card focusable" tabindex="0" data-app="search">
+          <div class="app-icon browser-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="7"></circle><path d="m15 15 6 6"></path></svg></div><span class="app-name">Tìm video</span>
+        </button>
         <!-- Settings -->
         <div class="app-card focusable" tabindex="0" data-app="settings">
           <div class="app-icon settings-icon">
@@ -109,7 +112,7 @@
         <span class="hint-key">Home</span> Trang chủ
         <span class="hint-key">Esc / Back</span> Trở về
       </div>
-      <button class="exit-btn focusable" id="exit-btn" tabindex="0">Thoát TV</button>
+      <div class="footer-actions"><button class="qr-pairing-btn focusable" id="tv-back-btn">← Back</button><button class="qr-pairing-btn focusable" id="tv-home-btn">⌂ Trang chủ</button><button class="exit-btn focusable" id="exit-btn" tabindex="0">Thoát TV</button></div>
     </footer>
   </div>
 
@@ -124,6 +127,7 @@
         <img id="qr-image" src="" alt="QR Code Remote" class="qr-img">
       </div>
       <div class="qr-url-text" id="qr-url-display">Đang tải địa chỉ...</div>
+      <label for="network-select">Mạng kết nối điện thoại</label><select id="network-select" class="focusable"><option value="">Tự chọn Ethernet / Wi-Fi</option></select>
       <div class="modal-actions" style="margin-top: 1.5rem;">
         <button class="btn btn-secondary focusable" id="btn-close-qr" tabindex="0">Đóng [Esc]</button>
       </div>
@@ -144,6 +148,9 @@
     </div>
   </div>
 
+  <div id="tv-alert" role="alert" class="tv-alert" hidden></div>
+  <script src="/static/common.js"></script>
+  <script src="/static/input_bridge.js"></script>
   <script src="/static/tv/app.js"></script>
 </body>
 </html>

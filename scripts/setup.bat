@@ -1,23 +1,31 @@
 @echo off
+setlocal
 cd /d "%~dp0\.."
-
-where python >nul 2>nul
-if %errorlevel% neq 0 (
-    echo [ERROR] Python not found on system PATH.
-    echo Please install Python 3.10+ from https://www.python.org/
+if exist ".venv\Scripts\python.exe" goto install
+py -3 -c "import sys; assert sys.version_info >= (3,10)" >nul 2>nul
+if not errorlevel 1 (
+    py -3 -m venv .venv
+    goto check
+)
+python -c "import sys; assert sys.version_info >= (3,10)" >nul 2>nul
+if errorlevel 1 (
+    echo [ERROR] Install Python 3.10+ from https://www.python.org/downloads/windows/
+    echo Enable the Python launcher or add Python to PATH, then run setup.bat again.
     pause
     exit /b 1
 )
-
-if not exist ".venv\Scripts\python.exe" (
-    echo [*] Creating Python virtual environment (.venv)...
-    python -m venv .venv
-    if %errorlevel% neq 0 (
-        echo [ERROR] Failed to create .venv virtual environment.
-        pause
-        exit /b 1
-    )
-)
-
-.\.venv\Scripts\python.exe scripts\setup.py
+python -m venv .venv
+:check
+if errorlevel 1 goto failed
+:install
+.venv\Scripts\python.exe -m pip --version >nul 2>nul
+if errorlevel 1 .venv\Scripts\python.exe -m ensurepip --upgrade
+if errorlevel 1 goto failed
+.venv\Scripts\python.exe scripts\setup.py
+if errorlevel 1 goto failed
 pause
+exit /b 0
+:failed
+echo [ERROR] Setup failed. Read the error above.
+pause
+exit /b 1

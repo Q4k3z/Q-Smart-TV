@@ -1,36 +1,31 @@
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import psutil
+from scripts.server_identity import managed_server_process, IDENTITY_FILE
 
-if sys.platform == "win32":
-    sys.stdout.reconfigure(encoding="utf-8")
 
 def stop_server():
-    print("========================================================")
-    print("          Q SMART TV — DỪNG MÁY CHỦ SERVER")
-    print("========================================================\n")
+    proc = managed_server_process()
+    if not proc:
+        print('[!] Không tìm thấy server thuộc Q Smart TV này. Không đóng tiến trình khác.')
+        return 0
+    try:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except psutil.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=3)
+        IDENTITY_FILE.unlink(missing_ok=True)
+        print('[OK] Đã dừng server Q Smart TV.')
+        return 0
+    except psutil.Error:
+        print('[LỖI] Không thể dừng server. Kiểm tra quyền của tiến trình.')
+        return 1
 
-    stopped_count = 0
-    # Search for processes listening on port 8765
-    for conn in psutil.net_connections(kind="inet"):
-        if conn.laddr.port == 8765:
-            pid = conn.pid
-            if pid and pid != psutil.Process().pid:
-                try:
-                    proc = psutil.Process(pid)
-                    p_name = proc.name()
-                    proc.terminate()
-                    gone, alive = psutil.wait_procs([proc], timeout=3.0)
-                    if alive:
-                        proc.kill()
-                    print(f"[*] Đã dừng máy chủ: PID={pid} ({p_name})")
-                    stopped_count += 1
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
 
-    if stopped_count > 0:
-        print(f"\n[OK] Đã dừng thành công {stopped_count} tiến trình máy chủ Q Smart TV.")
-    else:
-        print("[!] Không tìm thấy máy chủ Q Smart TV đang lắng nghe trên cổng 8765.")
-
-if __name__ == "__main__":
-    stop_server()
+if __name__ == '__main__':
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    sys.exit(stop_server())

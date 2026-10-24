@@ -1,38 +1,59 @@
 @echo off
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 echo ========================================================
-echo   Q SMART TV - PUSH DU AN LEN GITHUB (PUBLIC)
+echo   Q SMART TV - DONG BO VA PUSH MA NGUON LEN GITHUB
 echo ========================================================
 echo.
 
-set "GH_EXE=C:\Program Files\GitHub CLI\gh.exe"
-if not exist "%GH_EXE%" (
-    set "GH_EXE=gh"
+:: 1. Kiem tra va bo sung Git vao PATH neu chua co
+where git.exe >nul 2>&1
+if %errorlevel% neq 0 (
+    if exist "%LOCALAPPDATA%\Programs\Git\cmd\git.exe" (
+        set "PATH=%LOCALAPPDATA%\Programs\Git\cmd;%PATH%"
+    ) else if exist "C:\Program Files\Git\cmd\git.exe" (
+        set "PATH=C:\Program Files\Git\cmd;%PATH%"
+    ) else (
+        echo [!] Khong tim thay Git. Vui long cai dat Git tu https://git-scm.com/
+        pause
+        exit /b 1
+    )
 )
 
-:: 1. Kiem tra xac thuc GitHub
-"%GH_EXE%" auth status >nul 2>&1
+:: 2. Kiem tra trang thai Git
+echo [*] Dang kiem tra trang thai Git...
+git status -s
+
+echo.
+echo [*] Dang them cac thay doi vao Git...
+git add .
+
+echo.
+echo [*] Kiem tra commit moi...
+git diff --cached --quiet
 if %errorlevel% neq 0 (
-    echo [*] Ban chua dang nhap GitHub tren may tinh.
-    echo [*] He thong se mo trinh duyet de xac thuc GitHub (Dang nhap 1 lan duy nhat)...
+    git commit -m "chore(release): update latest codebase, full documentation and project assets"
+) else (
+    echo [*] Khong co thay doi moi can commit.
+)
+
+:: 3. Day ma nguon len GitHub
+echo.
+echo [*] Dang push ma nguon len GitHub branch main...
+git push -u origin main
+
+if %errorlevel% equ 0 (
     echo.
-    "%GH_EXE%" auth login -h github.com -p https -w
+    echo ========================================================
+    echo   [THANH CONG] DU AN DA DUOC PUSH LEN GITHUB!
+    echo   Dia chi Repository: https://github.com/Q4k3z/Q-Smart-TV
+    echo ========================================================
+) else (
+    echo.
+    echo [!] Co loi xay ra khi push len GitHub.
+    echo [!] Vui long kiem tra quyen truy cap hoac ket noi mang cua ban.
 )
 
-echo.
-echo [*] Dang tao va day ma nguon len GitHub Q4k3z/Q-Smart-TV (Public)...
-"%GH_EXE%" repo create Q-Smart-TV --public --source=. --remote=origin --push >nul 2>&1
-
-if %errorlevel% neq 0 (
-    echo [*] Repository da ton tai hoac can dong bo, dang thuc hien git push...
-    git push -u origin main
-)
-
-echo.
-echo ========================================================
-echo   [THANH CONG] DU AN DA DUOC PUSH LEN GITHUB!
-echo   Dia chi Repository: https://github.com/Q4k3z/Q-Smart-TV
-echo ========================================================
 echo.
 pause

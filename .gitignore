@@ -1,9 +1,39 @@
+# Python & Virtual Environments
 .venv/
+venv/
+env/
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Environment & Secrets
+.env
+data/config/*token*.txt
+data/config/server_process.json
+data/config/network.json
+*.lock
+
+# Logs & Temporary Files
 data/logs/*
+!data/logs/.gitkeep
+temp_refs/
+.tmp/
+*.tmp
+
+# Browser Profiles (Local Runtime)
 data/brave-tv-profile/
 data/brave-external-profile/
-.env
-temp_refs/
-.pytest_cache/
+
+# Build artifacts
+Q Smart TV.exe
+
+# Editor & OS Files
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+*.swp
+*.bak

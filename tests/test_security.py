@@ -1,7 +1,41 @@
 import pytest
 from fastapi import HTTPException
 from config import settings
-from core.security import validate_url, validate_media_path, ALLOWED_KEYS
+from core.security import validate_url, normalize_browser_url, validate_media_path, ALLOWED_KEYS
+
+
+@pytest.mark.parametrize('typed,expected', [
+    ('youtube.com', 'https://youtube.com'),
+    ('  example.com/watch?v=1#video  ', 'https://example.com/watch?v=1#video'),
+    ('example.com:8080/path', 'https://example.com:8080/path'),
+    ('192.168.1.3:8765', 'http://192.168.1.3:8765'),
+    ('10.0.0.1/admin', 'http://10.0.0.1/admin'),
+    ('127.0.0.1:8080/test', 'http://127.0.0.1:8080/test'),
+    ('localhost:8765', 'http://localhost:8765'),
+    ('tv.local', 'http://tv.local'),
+    ('[::1]:8765', 'http://[::1]:8765'),
+    ('//example.com/path', 'https://example.com/path'),
+    ('https://192.168.1.3:8765', 'https://192.168.1.3:8765'),
+    ('http://example.com', 'http://example.com'),
+    ('HTTPS://example.com', 'HTTPS://example.com'),
+    ('vídụ.vn', 'https://vídụ.vn'),
+])
+def test_browser_address_without_protocol(typed, expected):
+    assert normalize_browser_url(typed) == expected
+
+
+@pytest.mark.parametrize('typed', [
+    '', '  ', 'javascript:alert(1)', 'data:text/html,hi',
+    'file:///C:/Windows', 'ftp://example.com', 'mailto:a@example.com',
+    'https://', 'http:example.com', 'example.com:99999',
+    'example.com:abc', 'http://[::1', 'https://exa mple.com',
+    'https://example.com/\nhello', 'http://example.com\\path',
+    'user:password@example.com',
+])
+def test_browser_address_rejects_invalid_or_unsafe_input(typed):
+    with pytest.raises(HTTPException) as error:
+        normalize_browser_url(typed)
+    assert error.value.status_code == 400
 
 def test_validate_url_valid():
     assert validate_url("http://example.com") == "http://example.com"
