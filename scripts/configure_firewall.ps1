@@ -15,7 +15,7 @@ try {
     $taskPort = [int]$taskPortOutput
     if ($taskPort -lt 1 -or $taskPort -gt 65535) { throw 'Invalid port.' }
     Get-NetFirewallRule -DisplayName 'Q Smart TV Server' -ErrorAction SilentlyContinue | Remove-NetFirewallRule
-    New-NetFirewallRule -DisplayName 'Q Smart TV Server' -Direction Inbound -Action Allow -Protocol TCP -LocalPort $taskPort -Profile Private -RemoteAddress LocalSubnet | Out-Null
-    Write-Host "Allowed Q Smart TV TCP $taskPort on Private networks and LocalSubnet only."
+    New-NetFirewallRule -DisplayName 'Q Smart TV Server' -Direction Inbound -Action Allow -Protocol TCP -LocalPort $taskPort -Profile Any -RemoteAddress LocalSubnet | Out-Null
+    Write-Host "Allowed Q Smart TV TCP $taskPort on LocalSubnet (All Profiles)."
     Write-Host 'No Windows network category was changed.'
 } finally { Pop-Location }
